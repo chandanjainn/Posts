@@ -1,8 +1,8 @@
-import { Injectable, EventEmitter } from '@angular/core';
-import { Post } from './posts.model';
-import { Subject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { Post } from './posts.model';
 
 @Injectable({
   providedIn: 'root'

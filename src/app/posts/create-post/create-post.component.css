@@ -2,3 +2,12 @@ mat-form-field,
 textarea {
   width: 100%;
 }
+
+.img-preview {
+  height: 10rem;
+  margin: 1rem 0;
+}
+
+.img-preview img {
+  height: 100%;
+}
