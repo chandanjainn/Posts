@@ -2,7 +2,8 @@ const express = require('express'),
   app = express(),
   mongoose = require('mongoose'),
   path = require('path'),
-  routes = require('./routes/posts');
+  routes = require('./routes/posts'),
+  users = require('./routes/user');
 
 mongoose
   .connect(process.env.MONGODB_URL, { useNewUrlParser: true })
@@ -28,5 +29,6 @@ app.use((req, res, next) => {
 });
 
 app.use('/posts', routes);
+app.use('/user', users);
 
 module.exports = app;
