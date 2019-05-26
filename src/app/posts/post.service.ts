@@ -14,6 +14,7 @@ export class PostService {
 
   posts: Post[] = [];
   postAdded = new Subject<void>();
+  maxPostCount: number;
 
   createPost(post): void {
     const postData = new FormData();
@@ -26,41 +27,44 @@ export class PostService {
         postData
       )
       .subscribe(response => {
-        const newPost: Post = {
-          id: response.post.id,
-          title: post.title,
-          content: post.content,
-          imagePath: response.post.imagePath
-        };
-        this.posts.push(newPost);
-        this.postAdded.next();
         this.router.navigate(['/']);
       });
   }
 
-  getPostsFromServer(): void {
+  getPostsFromServer(postPerPage: number, currentPage: number): void {
+    const queryParams = `?pageSize=${postPerPage}&currentPage=${currentPage}`;
     this.http
-      .get<{ message: string; posts: any }>('http://localhost:3000/posts')
+      .get<{ message: string; posts: any; maxPostCount: number }>(
+        'http://localhost:3000/posts' + queryParams
+      )
       .pipe(
         map(postsData => {
-          return postsData.posts.map(post => {
-            return {
-              title: post.title,
-              content: post.content,
-              id: post._id,
-              imagePath: post.imagePath
-            };
-          });
+          return {
+            posts: postsData.posts.map(post => {
+              return {
+                title: post.title,
+                content: post.content,
+                id: post._id,
+                imagePath: post.imagePath
+              };
+            }),
+            maxPostCount: postsData.maxPostCount
+          };
         })
       )
-      .subscribe(posts => {
-        this.posts = posts;
+      .subscribe(transformedPosts => {
+        this.posts = transformedPosts.posts;
+        this.maxPostCount = transformedPosts.maxPostCount;
         this.postAdded.next();
       });
   }
 
   getPosts(): Post[] {
     return [...this.posts];
+  }
+
+  getMaxCount() {
+    return this.maxPostCount;
   }
 
   getPost(id) {
@@ -86,29 +90,11 @@ export class PostService {
     this.http
       .put('http://localhost:3000/posts/' + id, postData)
       .subscribe(response => {
-        const updatedPosts = [...this.posts];
-        const oldPost = this.posts.findIndex(post => post.id === id);
-        const post = {
-          id,
-          title,
-          content,
-          imagePath: image
-        };
-        updatedPosts[oldPost] = post;
-        this.posts = updatedPosts;
-        this.postAdded.next();
         this.router.navigate(['/']);
       });
   }
 
-  deletePost(id): void {
-    this.http
-      .delete('http://localhost:3000/posts/delete/' + id)
-      .subscribe(() => {
-        this.posts = this.posts.filter(post => {
-          return post.id !== id;
-        });
-        this.postAdded.next();
-      });
+  deletePost(id) {
+    return this.http.delete('http://localhost:3000/posts/delete/' + id);
   }
 }

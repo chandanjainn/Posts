@@ -43,10 +43,28 @@ router.post('', multer({ storage }).single('image'), (req, res, next) => {
 });
 
 router.get('', async (req, res) => {
-  const posts = await Post.find();
-  res
-    .status(200)
-    .json({ message: 'Posts retreived successfully', posts: posts });
+  try {
+    const pageSize = +req.query.pageSize,
+      currentPage = +req.query.currentPage;
+    let fetchedPosts;
+    let maxPostCount;
+    if (pageSize && currentPage) {
+      fetchedPosts = await Post.find()
+        .skip(pageSize * (currentPage - 1))
+        .limit(pageSize);
+      maxPostCount = await Post.countDocuments();
+    }
+    res.status(200).json({
+      message: 'Posts retreived successfully',
+      posts: fetchedPosts,
+      maxPostCount
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: "Posts couldn'currentPaget be retreived",
+      error: error
+    });
+  }
 });
 
 router.get('/:id', async (req, res) => {
@@ -77,7 +95,7 @@ router.put('/:id', multer({ storage }).single('image'), async (req, res) => {
   });
   try {
     await Post.updateOne({ _id: req.params.id }, post);
-    res.status(200).json({ message: 'Post updated successfully'});
+    res.status(200).json({ message: 'Post updated successfully' });
   } catch (error) {
     res.status(404).json({ message: 'Post not found' });
   }

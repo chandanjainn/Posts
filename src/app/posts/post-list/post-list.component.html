@@ -21,6 +21,7 @@
   [pageSize]="postPerPage"
   [pageSizeOptions]="pageSizeOptions"
   (page)="onPageChange($event)"
+  *ngIf="posts.length > 0"
 >
 </mat-paginator>
 
