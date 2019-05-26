@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { PostService } from '../post.service';
 import { Post } from '../posts.model';
 
@@ -19,8 +19,7 @@ export class CreatePostComponent implements OnInit {
 
   constructor(
     private postService: PostService,
-    private route: ActivatedRoute,
-    private router: Router
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
@@ -45,11 +44,13 @@ export class CreatePostComponent implements OnInit {
           this.post = {
             id: postData._id,
             title: postData.title,
-            content: postData.content
+            content: postData.content,
+            imagePath: postData.imagePath
           };
           this.form.setValue({
             title: this.post.title,
-            content: this.post.content
+            content: this.post.content,
+            image: this.post.imagePath
           });
         });
       } else {
@@ -58,16 +59,16 @@ export class CreatePostComponent implements OnInit {
     });
   }
 
-  savePost() {
+  savePost(): void {
     if (this.form.invalid) {
       return;
     }
     if (!this.isEdit) {
       this.isLoading = true;
       this.postService.createPost({
-        id: null,
         title: this.form.value.title,
-        content: this.form.value.content
+        content: this.form.value.content,
+        image: this.form.value.image
       });
       this.isLoading = false;
     } else {
@@ -75,18 +76,17 @@ export class CreatePostComponent implements OnInit {
       this.postService.editPost(
         this.postId,
         this.form.value.title,
-        this.form.value.content
+        this.form.value.content,
+        this.form.value.image
       );
       this.isLoading = false;
     }
-    this.router.navigate(['/']);
-    this.form.reset();
   }
 
-  pickImage(event) {
+  pickImage(event: Event): void {
     const file = (event.target as HTMLInputElement).files[0];
     this.form.patchValue({ image: file });
-    this.form.get('image').updateValueAndValidity;
+    this.form.get('image').updateValueAndValidity();
     const reader = new FileReader();
     reader.onload = () => {
       this.imagePreview = reader.result.toString();

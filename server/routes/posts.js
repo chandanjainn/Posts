@@ -1,13 +1,44 @@
 const express = require('express'),
   router = express.Router(),
-  Post = require('../models/post');
+  Post = require('../models/post'),
+  multer = require('multer');
 
-router.post('', (req, res, next) => {
-  const post = new Post({ title: req.body.title, content: req.body.content });
+const MIME_TYPE_MAP = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg'
+};
+
+const storage = multer.diskStorage({
+  destination: (req, file, callback) => {
+    const isValid = MIME_TYPE_MAP[file.mimetype];
+    if (!isValid) {
+      return new Error('Invalid file type');
+    }
+    callback(null, 'server/images');
+  },
+  filename: (req, file, callback) => {
+    const name = file.originalname
+      .toLowerCase()
+      .split(' ')
+      .join('-');
+    const ext = MIME_TYPE_MAP[file.mimetype];
+    callback(null, name + '-' + Date.now().t + '.' + ext);
+  }
+});
+
+router.post('', multer({ storage }).single('image'), (req, res, next) => {
+  const url = req.protocol + '://' + req.get('host');
+  const post = new Post({
+    title: req.body.title,
+    content: req.body.content,
+    imagePath: url + '/images/' + req.file.filename
+  });
   post.save().then(newPost => {
-    res
-      .status(201)
-      .json({ message: 'Post addedd successfully', postId: newPost._id });
+    res.status(201).json({
+      message: 'Posts saved successfully',
+      post: { ...newPost, id: newPost._id }
+    });
   });
 });
 
@@ -28,22 +59,25 @@ router.get('/:id', async (req, res) => {
 });
 
 router.delete('/delete/:id', async (req, res) => {
-  console.log(req.params.id);
   await Post.deleteOne({ _id: req.params.id });
   res.status(200).json({ message: 'Post deleted successfully' });
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', multer({ storage }).single('image'), async (req, res) => {
+  let imagePath = req.body.imagePath;
+  if (req.file) {
+    const url = req.protocol + '://' + req.get('host');
+    imagePath = url + '/images/' + req.file.filename;
+  }
   const post = new Post({
     _id: req.body.id,
     title: req.body.title,
-    content: req.body.content
+    content: req.body.content,
+    imagePath
   });
-  console.log(post._id);
-  console.log(post);
   try {
     await Post.updateOne({ _id: req.params.id }, post);
-    res.status(200).json({ message: 'Post updated successfully' });
+    res.status(200).json({ message: 'Post updated successfully'});
   } catch (error) {
     res.status(404).json({ message: 'Post not found' });
   }

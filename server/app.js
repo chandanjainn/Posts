@@ -1,6 +1,7 @@
 const express = require('express'),
   app = express(),
   mongoose = require('mongoose'),
+  path = require('path'),
   routes = require('./routes/posts');
 
 mongoose
@@ -11,6 +12,7 @@ mongoose
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use('/images', express.static(path.join('server/images')));
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
