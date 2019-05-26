@@ -61,7 +61,7 @@ router.get('', async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({
-      message: "Posts couldn'currentPaget be retreived",
+      message: "Posts couldn't be retreived",
       error: error
     });
   }
