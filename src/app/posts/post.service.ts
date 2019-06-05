@@ -1,16 +1,24 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Post } from './posts.model';
+import { environment } from 'src/environments/environment';
 import { isObject } from 'util';
-import { Router } from '@angular/router';
+import { NotificationService } from '../shared/notification.service';
+import { Post } from './posts.model';
+
+const POSTS_URL = environment.API_URL + '/posts';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PostService {
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private notificationService: NotificationService
+  ) {}
 
   posts: Post[] = [];
   postAdded = new Subject<void>();
@@ -22,12 +30,12 @@ export class PostService {
     postData.append('content', post.content);
     postData.append('image', post.image, post.title);
     this.http
-      .post<{ message: string; post: Post }>(
-        'http://localhost:3000/posts',
-        postData
-      )
+      .post<{ message: string; post: Post }>(POSTS_URL, postData)
       .subscribe(response => {
-        this.router.navigate(['/']);
+        this.notifyChanges('added');
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 500);
       });
   }
 
@@ -35,7 +43,7 @@ export class PostService {
     const queryParams = `?pageSize=${postPerPage}&currentPage=${currentPage}`;
     this.http
       .get<{ message: string; posts: any; maxPostCount: number }>(
-        'http://localhost:3000/posts' + queryParams
+        POSTS_URL + queryParams
       )
       .pipe(
         map(postsData => {
@@ -45,7 +53,8 @@ export class PostService {
                 title: post.title,
                 content: post.content,
                 id: post._id,
-                imagePath: post.imagePath
+                imagePath: post.imagePath,
+                owner: post.owner
               };
             }),
             maxPostCount: postsData.maxPostCount
@@ -67,17 +76,18 @@ export class PostService {
     return this.maxPostCount;
   }
 
-  getPost(id) {
+  getPost(id: string) {
     return this.http.get<{
       _id: string;
       title: string;
       content: string;
       imagePath: string;
-    }>('http://localhost:3000/posts/' + id);
+      owner: string;
+    }>(POSTS_URL + '/' + id);
   }
 
   editPost(id: string, title: string, content: string, image): void {
-    let postData;
+    let postData: Post | FormData;
     if (isObject(image)) {
       postData = new FormData();
       postData.append('id', id);
@@ -85,16 +95,22 @@ export class PostService {
       postData.append('content', content);
       postData.append('image', image, title);
     } else {
-      postData = { id, title, content, imagePath: image };
+      postData = { id, title, content, imagePath: image, owner: null };
     }
-    this.http
-      .put('http://localhost:3000/posts/' + id, postData)
-      .subscribe(response => {
+    this.http.put(POSTS_URL + '/' + id, postData).subscribe(response => {
+      this.notifyChanges('updated');
+      setTimeout(() => {
         this.router.navigate(['/']);
-      });
+      }, 500);
+    });
   }
 
-  deletePost(id) {
-    return this.http.delete('http://localhost:3000/posts/delete/' + id);
+  deletePost(id: string) {
+    this.notifyChanges('deleted');
+    return this.http.delete(POSTS_URL + '/delete/' + id);
+  }
+
+  private notifyChanges(action: string) {
+    this.notificationService.showSuccess('Post ' + action + ' successfully.');
   }
 }

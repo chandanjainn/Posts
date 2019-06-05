@@ -1,20 +1,11 @@
 const express = require('express'),
   router = express.Router(),
-  Post = require('../models/post'),
-  multer = require('multer');
-
-const MIME_TYPE_MAP = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/jpg': 'jpg'
-};
+  multer = require('multer'),
+  auth = require('../middleware/auth'),
+  PostController = require('../controllers/posts');
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
-    const isValid = MIME_TYPE_MAP[file.mimetype];
-    if (!isValid) {
-      return new Error('Invalid file type');
-    }
     callback(null, 'server/images');
   },
   filename: (req, file, callback) => {
@@ -22,83 +13,28 @@ const storage = multer.diskStorage({
       .toLowerCase()
       .split(' ')
       .join('-');
-    const ext = MIME_TYPE_MAP[file.mimetype];
-    callback(null, name + '-' + Date.now().t + '.' + ext);
+    callback(null, name + '-' + Date.now() + '.' + file.mimetype.split('/')[1]);
   }
 });
 
-router.post('', multer({ storage }).single('image'), (req, res, next) => {
-  const url = req.protocol + '://' + req.get('host');
-  const post = new Post({
-    title: req.body.title,
-    content: req.body.content,
-    imagePath: url + '/images/' + req.file.filename
-  });
-  post.save().then(newPost => {
-    res.status(201).json({
-      message: 'Posts saved successfully',
-      post: { ...newPost, id: newPost._id }
-    });
-  });
-});
+router.post(
+  '',
+  auth,
+  multer({ storage }).single('image'),
+  PostController.addPost
+);
 
-router.get('', async (req, res) => {
-  try {
-    const pageSize = +req.query.pageSize,
-      currentPage = +req.query.currentPage;
-    let fetchedPosts;
-    let maxPostCount;
-    if (pageSize && currentPage) {
-      fetchedPosts = await Post.find()
-        .skip(pageSize * (currentPage - 1))
-        .limit(pageSize);
-      maxPostCount = await Post.countDocuments();
-    }
-    res.status(200).json({
-      message: 'Posts retreived successfully',
-      posts: fetchedPosts,
-      maxPostCount
-    });
-  } catch (error) {
-    res.status(400).json({
-      message: "Posts couldn't be retreived",
-      error: error
-    });
-  }
-});
+router.get('', PostController.getAllPosts);
 
-router.get('/:id', async (req, res) => {
-  const post = await Post.findById({ _id: req.params.id });
-  if (post) {
-    res.status(200).json(post);
-  } else {
-    res.status(404).json({ message: 'Post not found' });
-  }
-});
+router.get('/:id', PostController.getPost);
 
-router.delete('/delete/:id', async (req, res) => {
-  await Post.deleteOne({ _id: req.params.id });
-  res.status(200).json({ message: 'Post deleted successfully' });
-});
+router.delete('/delete/:id', auth, PostController.deletePost);
 
-router.put('/:id', multer({ storage }).single('image'), async (req, res) => {
-  let imagePath = req.body.imagePath;
-  if (req.file) {
-    const url = req.protocol + '://' + req.get('host');
-    imagePath = url + '/images/' + req.file.filename;
-  }
-  const post = new Post({
-    _id: req.body.id,
-    title: req.body.title,
-    content: req.body.content,
-    imagePath
-  });
-  try {
-    await Post.updateOne({ _id: req.params.id }, post);
-    res.status(200).json({ message: 'Post updated successfully' });
-  } catch (error) {
-    res.status(404).json({ message: 'Post not found' });
-  }
-});
+router.put(
+  '/:id',
+  auth,
+  multer({ storage }).single('image'),
+  PostController.editPost
+);
 
 module.exports = router;

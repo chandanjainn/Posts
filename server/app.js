@@ -6,7 +6,10 @@ const express = require('express'),
   users = require('./routes/user');
 
 mongoose
-  .connect(process.env.MONGODB_URL, { useNewUrlParser: true })
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useCreateIndex: true
+  })
   .then(() => {
     console.log('Connected to Database');
   });
@@ -19,7 +22,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Origin,X-Requested-With,Content-Type,Accept'
+    'Origin,X-Requested-With,Content-Type,Accept,Authorization'
   );
   res.setHeader(
     'Access-Control-Allow-Methods',
