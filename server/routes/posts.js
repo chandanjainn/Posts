@@ -1,5 +1,5 @@
 const express = require('express'),
-  router = express.Router(),
+  postRouter = express.Router(),
   multer = require('multer'),
   auth = require('../middleware/auth'),
   PostController = require('../controllers/posts');
@@ -17,24 +17,24 @@ const storage = multer.diskStorage({
   }
 });
 
-router.post(
+postRouter.post(
   '',
   auth,
   multer({ storage }).single('image'),
   PostController.addPost
 );
 
-router.get('', PostController.getAllPosts);
+postRouter.get('', PostController.getAllPosts);
 
-router.get('/:id', PostController.getPost);
+postRouter.get('/:id', PostController.getPost);
 
-router.delete('/delete/:id', auth, PostController.deletePost);
+postRouter.delete('/delete/:id', auth, PostController.deletePost);
 
-router.put(
+postRouter.put(
   '/:id',
   auth,
   multer({ storage }).single('image'),
   PostController.editPost
 );
 
-module.exports = router;
+module.exports = postRouter;

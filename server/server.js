@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const app = require('./server/app');
+const app = require('./app');
 const debug = require('debug')('node-angular');
 const http = require('http');
 
